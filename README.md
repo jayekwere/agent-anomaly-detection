@@ -1,5 +1,5 @@
 Anomaly Detection on AI-Agent Access Behavior
-Detecting when an AI agent's access behavior looks anomalous — a sign of a compromised, misconfigured, or misbehaving agent. Built by a security engineer (vulnerability management @ Kinaxis; technical support on BeyondTrust's Pathfinder identity-security stack, which now governs AI-agent identities) applying ML to a problem adjacent to my day work.
+Detecting when an AI agent's access behavior looks anomalous — a sign of a compromised, misconfigured, or misbehaving agent. Built by a security engineer -vulnerability management / technical support on BeyondTrust's Pathfinder identity-security stack, which now governs AI-agent identities) applying ML to a problem adjacent to my day work.
 The honest story (this is the point)
 This project is as much about not fooling yourself as it is about the model.
 Day 1 — the trap. I generated synthetic agent sessions and injected obvious anomalies (a clean escalate → bulk_export → delete chain) plus a feature that fired only on attacks. Isolation Forest scored ROC-AUC 0.99. That looked great — and meant almost nothing. The model wasn't detecting subtle bad behavior; it was reading a neon sign I'd painted on every attack.
