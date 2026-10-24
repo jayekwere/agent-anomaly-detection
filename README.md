@@ -1,5 +1,5 @@
 **Anomaly Detection on AI-Agent Access Behavior**
-Detecting when an AI agent's access behavior looks anomalous — a sign of a compromised, misconfigured, or misbehaving agent. This learning project uses synthetic agent activity to explore anomaly detection.
+Detecting when an AI agent's access behavior looks anomalous — a sign of a compromised, misconfigured, or misbehaving agent.
 
 **The honest story (this is the point)**
 This project is as much about not fooling yourself as it is about the model.
