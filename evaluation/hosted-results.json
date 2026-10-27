@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "seeds": {
+    "train": 42,
+    "validation": 43,
+    "test": 44
+  },
+  "validationAlertBudget": 0.02,
+  "forestContamination": "auto",
+  "partitions": [
+    {
+      "name": "train",
+      "sessions": 2100,
+      "anomaliesForEvaluationOnly": 100,
+      "featureSHA256": "bfab904d50675197cddfbd5bba5013f294cc169558b4af9c2e2bb87dede38071"
+    },
+    {
+      "name": "validation",
+      "sessions": 2100,
+      "anomaliesForEvaluationOnly": 100,
+      "featureSHA256": "a14693f75f42d41fd7835c43366893dc80250ac3b770bfd79a97ee2c7a45f9b1"
+    },
+    {
+      "name": "test",
+      "sessions": 2100,
+      "anomaliesForEvaluationOnly": 100,
+      "featureSHA256": "70db4547831051d235624c2dcedacb9f8b2ad4de02dba7e1e8e8e7ba4f2a28e5"
+    }
+  ],
+  "models": {
+    "isolationForest": {
+      "thresholdFromUnlabelledValidation": 0.5612945429468215,
+      "validation": {
+        "rocAUC": 0.6832725,
+        "averagePrecision": 0.08176475202148223,
+        "precision": 0.0975609756097561,
+        "recall": 0.04,
+        "alertFraction": 0.019523809523809523,
+        "confusionMatrixTNFPFNTP": [
+          1963,
+          37,
+          96,
+          4
+        ]
+      },
+      "test": {
+        "rocAUC": 0.7289975,
+        "averagePrecision": 0.10615498971337102,
+        "precision": 0.14285714285714285,
+        "recall": 0.07,
+        "alertFraction": 0.023333333333333334,
+        "confusionMatrixTNFPFNTP": [
+          1958,
+          42,
+          93,
+          7
+        ]
+      }
+    },
+    "sensitiveActionRate": {
+      "thresholdFromUnlabelledValidation": 0.2222222222222222,
+      "validation": {
+        "rocAUC": 0.7823525000000001,
+        "averagePrecision": 0.13994950764734979,
+        "precision": 0.16216216216216217,
+        "recall": 0.06,
+        "alertFraction": 0.017619047619047618,
+        "confusionMatrixTNFPFNTP": [
+          1969,
+          31,
+          94,
+          6
+        ]
+      },
+      "test": {
+        "rocAUC": 0.8287800000000001,
+        "averagePrecision": 0.18492561639173855,
+        "precision": 0.22580645161290322,
+        "recall": 0.07,
+        "alertFraction": 0.014761904761904763,
+        "confusionMatrixTNFPFNTP": [
+          1976,
+          24,
+          93,
+          7
+        ]
+      }
+    }
+  },
+  "limits": [
+    "Synthetic sessions from one generator family, not real incident data",
+    "Disjoint generated sessions do not establish generalization to real users or unseen attack families",
+    "A validation alert budget does not guarantee a future false-positive rate",
+    "Training data may contain anomalies; their labels are never passed to fitting or threshold selection",
+    "Saved notebook results used in-sample evaluation and are historical only"
+  ],
+  "executedAtUTC": "2026-10-27T14:48:03.764465+00:00",
+  "sourceSHA256": "ba9041b5931ed187c3b4464e5e77e944cebec25d1cbbb6c8e6c92fb1bd3927d6",
+  "environment": {
+    "python": "3.12.15",
+    "numpy": "2.4.6",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "joblib": "1.6.0",
+    "threadpoolctl": "3.7.0"
+  }
+}

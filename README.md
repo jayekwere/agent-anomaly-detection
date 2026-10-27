@@ -38,3 +38,7 @@ The [CI workflow](.github/workflows/evaluation.yml) runs regression tests on Pyt
 The saved notebook is historical: its easier generator scored about 0.99 ROC-AUC, and a revised generator scored about 0.75. Those experiments fitted and evaluated on the same samples and supplied the true synthetic contamination rate. They are not held-out performance claims.
 
 The current script removes those evaluation shortcuts. It still uses one synthetic generator family, so disjoint sessions do not establish performance on real users, changing behavior or unseen attack families. The generator's labels are not proof of malicious intent. The low recall and false-alert count remain part of the result, not issues hidden by the passing regression tests.
+
+## Hosted verification
+
+[Run #40524556899](https://github.com/jayekwere/agent-anomaly-detection/actions/runs/40524556899) passed for implementation commit `4c60df8`: **6 regression tests on each of Python 3.12 and 3.13**, plus the complete held-out evaluation on Python 3.12.15. The downloaded [hosted results](evaluation/hosted-results.json) match the recorded test metrics above, including the baseline outperforming the forest. [Artifact/source verification](evaluation/hosted-verification.json) records the exact hashes; the local and hosted runs remain separate files.

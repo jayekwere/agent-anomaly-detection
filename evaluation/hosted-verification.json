@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "4c60df8150040102a83ec579b9aa2cbd1f3cff20",
+  "runURL": "https://github.com/jayekwere/agent-anomaly-detection/actions/runs/40524556899",
+  "outcome": "passed",
+  "regressionTestsPerPythonVersion": 6,
+  "pythonMatrix": [
+    "3.12",
+    "3.13"
+  ],
+  "fullEvaluationPython": "3.12.15",
+  "artifactSHA256": "4f4728ebc91bc933e95eb14ad1c9a2b7154df5c49889130556b18954a61f0c26",
+  "sourceSHA256": "ba9041b5931ed187c3b4464e5e77e944cebec25d1cbbb6c8e6c92fb1bd3927d6"
+}
