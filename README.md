@@ -1,29 +1,26 @@
-**Anomaly Detection on AI-Agent Access Behavior**
-Detecting when an AI agent's access behavior looks anomalous - a sign of a compromised, misconfigured, or misbehaving agent.
+# Anomaly Detection on AI-Agent Access Behavior
 
-**The honest story (this is the point)**
-This project is as much about not fooling yourself as it is about the model.
+An Isolation Forest experiment on synthetic agent-access sessions. The notebook compares two data generators and shows how feature design changes the reported results.
 
-**Day 1 - the trap.** I generated synthetic agent sessions and injected obvious anomalies (a clean escalate → bulk_export → delete chain) plus a feature that fired only on attacks. Isolation Forest scored ROC-AUC 0.99. That looked great - and meant almost nothing. The model wasn't detecting subtle bad behavior; it was reading a neon sign I'd painted on every attack.
+## Method and recorded results
 
-**Day 2 - making it real.** I rewrote the data so anomalies are subtle: only a mildly elevated escalation rate and sensitive actions scattered through an otherwise-normal session. I dropped the giveaway feature and replaced it with matters-of-degree signals (escalation rate, export rate, transition entropy) that also occur in normal traffic. On this fair test the score honestly dropped to ROC-AUC ~0.75, with low precision/recall on the anomaly class and heavily overlapping score distributions.
+The first generator included an obvious escalation, export and deletion sequence, plus a feature present only in injected attacks. It reported ROC-AUC around 0.99, but that feature made the experiment too easy to support a useful detection claim.
 
+The revised generator removes that feature and places subtler anomalies within otherwise normal sessions. It uses escalation rate, export rate and transition entropy. The recorded ROC-AUC falls to about 0.75, with low precision/recall for the anomaly class and overlapping score distributions.
 
-**That drop is the result.** A 0.75 on a fair problem is worth more than a 0.99 on a rigged one. It shows there's real signal - subtle behavioral anomalies are detectable better than chance - but that simple frequency features and an unsupervised baseline only get you so far. That's a true finding, not a failure.
+These are results recorded in the notebook, not measurements from live agent activity.
 
-**What's here**
-agent_anomaly_detection.ipynb - the full arc: synthetic data generators (easy + hard), sequence-level feature engineering, Isolation Forest baseline, and honest evaluation comparing both versions.
+## Run it
 
-**Run it**
-Open in Google Colab → Run all. No external data; synthetic throughout.
+Open `agent_anomaly_detection.ipynb` in Google Colab and run the cells in order. All data is generated in the notebook; no external dataset or API key is needed.
 
-**Honest limitations**
+## Limitations
 
-**Synthetic data.** Results demonstrate an approach; they are not real-world performance. The realism of the generator is the main limitation.
+- The synthetic generator determines which behaviors the model can distinguish.
+- The experiment supplies the true contamination rate, which would normally be unknown for real activity.
+- Simple frequency and sequence-summary features leave many behaviors untested.
+- Results do not establish detection quality on real agent sessions.
 
-**Unsupervised baseline.** Isolation Forest with the true contamination rate supplied - in production you wouldn't know that rate.
+## Next steps
 
-**Simple features.** Frequency + a couple of sequence signals; richer transition modeling is unexplored here.
-
-**Next steps (Day 3+)**
-Add an autoencoder and compare against Isolation Forest; n-gram transition-probability features; threshold selection without supplying the true anomaly rate; and, ultimately, validation against real (non-synthetic) agent logs.
+Evaluate on separate sessions, choose contamination and decision thresholds without the true anomaly rate, and report precision/recall across those choices. Richer sequence features and additional baselines can follow once that evaluation is in place.
