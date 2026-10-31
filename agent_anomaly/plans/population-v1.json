@@ -1,0 +1,48 @@
+{
+  "experiment": "population-v1",
+  "schema_version": 5,
+  "design_status": "Committed before fresh test generation; motivated by historical reader-score distributions and known prior failures.",
+  "training": {"seed": 42, "day": 0, "count": 1200},
+  "validation": {"seed": 43, "day": 2, "count": 1200},
+  "sequence_model": {"additive_smoothing": 1.0},
+  "calibration": {"quantile": 0.98, "method": "higher", "strict_greater_than": true},
+  "review_budget": 0.02,
+  "population_calibration": {
+    "grouping": "Freeze tenant/actor groups from unfiltered training event tool proportions only; never use scenario labels, population labels, actor-name parsing or test tool proportions to assign groups.",
+    "read_dominant_min_fraction": 0.5,
+    "export_heavy_min_fraction": 0.25,
+    "precedence": ["read_dominant", "export_heavy", "other"],
+    "minimum_validation_sessions": 50,
+    "scope": "tenant plus training-derived group",
+    "method": "Within each supported scope, divide rules and sequence scores by their validation q98s, take maximum, divide by that scope's combined validation q98; final threshold is strictly greater than 1.",
+    "fallback": "For a sparse/zero-scale/missing validation group, use that tenant's pooled validation calibrator only, with at least 50 sessions and positive scales; record fallback. Unknown actors or tenants without a valid reference reject explicitly.",
+    "budget": "One global floor(0.02 * sessions) cap after candidate selection; no group quotas, component quotas or group-specific review budgets.",
+    "weights_tuned": false
+  },
+  "test_batches": [
+    {"name": "fresh_population_joint", "parts": [
+      {"seed": 9212601, "day": 22, "count": 600, "unseen": false},
+      {"seed": 9212602, "day": 22, "count": 600, "unseen": true}
+    ]},
+    {"name": "fresh_population_sequence", "parts": [
+      {"seed": 9212603, "day": 24, "count": 1200, "unseen": true}
+    ]},
+    {"name": "fresh_population_nonsequence", "parts": [
+      {"seed": 9212604, "day": 26, "count": 1200, "unseen": false}
+    ]}
+  ],
+  "mixture": "Retain all sessions from whole independent streams with neutral namespaced IDs; use unchanged generator and make_batch implementation. No label-based sampling.",
+  "primary": "Population-calibrated fusion versus global fusion, rules and sequence on fresh_population_joint; report reader-sequence detected/missed, false alerts and displacement under one shared cap.",
+  "secondary": ["exact shared 24-review workload", "scenario and annotated population breakdowns", "training-derived group allocation", "fallback counts", "paired actor-cluster recall differences", "missed reader scores/ranks/threshold-versus-cap reasons"],
+  "paired_uncertainty": {"unit": "tenant_actor_cluster", "replicates": 500, "seed": 9004, "refit_thresholds": false, "rerank_alerts": false},
+  "promotion_policy": "Freeze parameters before generation; report all controls and no test-driven retuning or automatic reference promotion.",
+  "limitations": [
+    "Targeted fresh instances of inspected synthetic families, not blind family validation.",
+    "Training-derived behavioral strata are proxies, not authenticated roles or ground-truth populations.",
+    "Calibration reuses unlabelled validation for component scaling and within-group thresholds; no guaranteed false-positive rate or fairness guarantee.",
+    "Small per-group tails and contaminated validation can produce unstable thresholds and persistent reader misses.",
+    "A single queue can displace other populations; there are no per-group quotas.",
+    "Profiles are frozen and can become stale after role or policy changes; unknown actors reject, and sparse groups use recorded same-tenant fallback.",
+    "Paired intervals hold fitted models and alert decisions fixed; no training/calibration or reranking uncertainty is included."
+  ]
+}

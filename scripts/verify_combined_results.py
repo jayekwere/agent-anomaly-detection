@@ -17,16 +17,21 @@ BATCHES = {"fresh_joint", "fresh_sequence_control", "fresh_nonsequence_control"}
 
 
 def validate(path: Path) -> dict:
-    result = json.loads(path.read_text())
+    return validate_data(json.loads(path.read_text()))
+
+
+def validate_data(
+    result: dict, detectors: set = DETECTORS, batches: set = BATCHES, schema_version: int = 4
+) -> dict:
     if (
-        result.get("schema_version") != 4
+        result.get("schema_version") != schema_version
         or result.get("synthetic") is not True
-        or set(result["tests"]) != BATCHES
+        or set(result["tests"]) != batches
     ):
         raise ValueError("invalid combined experiment contract")
     fraction = result["plan"]["review_budget"]
     for batch in result["tests"].values():
-        if set(batch["models"]) != DETECTORS:
+        if set(batch["models"]) != detectors:
             raise ValueError("missing comparator")
         n, positives = batch["sessions"], batch["positives"]
         cap = math.floor(n * fraction)

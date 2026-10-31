@@ -77,6 +77,21 @@ Combination improves AP and precision here, but loses recall versus sequence alo
 
 [Combined methodology and tradeoffs](docs/COMBINED_BASELINE.md), [calculated report](evaluation/combined-v1/report.md), and [full results](evaluation/combined-v1/results.json) document the frozen design, score scales, single cap, gained/lost detections, reader misses, equal-workload reviews and uncertainty. These are new instances of inspected synthetic families.
 
+## Reader investigation and population-aware calibration
+
+A further fixed-design experiment derives behavioral groups from **training tool frequencies**, calibrates within tenant/group using unlabelled validation, and keeps **one shared 24-session cap**. It never uses the generator's population labels or actor-name parsing for grouping.
+
+On a new mixed set of 1,200 sessions and 52 anomalies, population calibration finds **7 true / 7 false alerts**, versus global fusion **8 / 7**. AP moves from 0.371 to 0.380, while recall falls from 0.154 to 0.135. At exactly 24 reviews, results are 14 true / 10 false versus 15 / 9. **All 13 reader-sequence anomalies remain missed**, as do all 13 in the new sequence-only control. The candidate fails its reader-recovery objective; no reference is promoted.
+
+The investigation documents weaker reader transition scores, substantial overlap with benign behavior, and small contaminated local validation tails that can raise reader thresholds. Historical diagnostics and fresh evaluation remain separate.
+
+```sh
+.venv/bin/python -m agent_anomaly.population_experiment --output artifacts/population
+.venv/bin/python scripts/verify_population_results.py artifacts/population/results.json --reference evaluation/population-v1/results.json
+```
+
+[Investigation and leakage controls](docs/POPULATION_CALIBRATION.md), [calculated report](evaluation/population-v1/report.md), [full results](evaluation/population-v1/results.json), and [historical diagnostic evidence](evaluation/population-v1/investigation.json) include support/fallback policies, tenant isolation, reader examples, group allocation, matched-workload controls and displacement tradeoffs.
+
 ## Scenarios and trust boundaries
 
 The generator includes denial probing, export concentration, frequency shifts, and held-out reordered tool sequences. Reader, operator and batch populations can legitimately export, request administrative tools, incur denials and operate quickly. These overlaps create benign alert candidates and prevent an attack-only tool shortcut. New tenant/actor/tool relationships are exposed as novelty evidence; they are not verified attack coverage. Policy-change and privileged-boundary hypotheses require source context beyond an anomaly score.
@@ -96,9 +111,10 @@ The [legacy notebook](legacy/research/agent_anomaly_detection.ipynb) used in-sam
 .venv/bin/python -m coverage run -m unittest -v
 .venv/bin/python -m coverage run --append -m agent_anomaly.sequence_experiment --output artifacts/sequence
 .venv/bin/python -m coverage run --append -m agent_anomaly.combined_experiment --output artifacts/combined
+.venv/bin/python -m coverage run --append -m agent_anomaly.population_experiment --output artifacts/population
 .venv/bin/python -m coverage report
-.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
-.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
+.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
+.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
 .venv/bin/python -m bandit -r agent_anomaly scripts -q
 .venv/bin/python -m pip_audit -r requirements.txt --no-deps --disable-pip
 .venv/bin/python -m agent_anomaly --output artifacts/replay
