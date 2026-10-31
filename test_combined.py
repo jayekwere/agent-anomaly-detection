@@ -152,3 +152,50 @@ class CombinedComparisonTests(unittest.TestCase):
             all(sum(p["count"] for p in b["parts"]) == 1200 for b in self.plan["test_batches"])
         )
         self.assertEqual(self.plan["review_budget"], 0.02)
+
+
+class CombinedArtifactTests(unittest.TestCase):
+    def test_shared_queue_and_reader_miss_corruption_rejected(self):
+        from pathlib import Path
+        import tempfile
+        from scripts.verify_combined_results import validate
+
+        data = validate(Path(__file__).parent / "evaluation/combined-v1/results.json")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            for field in ["queue", "reader", "dominance", "full_budget"]:
+                bad = copy.deepcopy(data)
+                entry = bad["tests"]["fresh_joint"]
+                if field == "queue":
+                    entry["shared_queue"]["unique_alerts"] += 1
+                elif field == "reader":
+                    entry["models"]["rules_plus_sequence"]["reader_sequence"]["missed"] += 1
+                elif field == "dominance":
+                    entry["shared_queue"]["dominance"]["rules"]["true_positives"] += 1
+                else:
+                    entry["models"]["rules_plus_sequence"]["full_budget_review"]["alerts"] += 1
+                path.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError):
+                    validate(path)
+
+    def test_archived_sources_must_match_despite_added_experiment_files(self):
+        from scripts.verify_sequence_results import compare_replay
+
+        expected = {
+            "environment": {"python": "3.12", "numpy": "2"},
+            "source_sha256": {"original.py": "abc"},
+            "metric": 0.5,
+        }
+        actual = copy.deepcopy(expected)
+        actual["source_sha256"]["new_independent_experiment.py"] = "xyz"
+        actual["environment"]["python"] = "3.13"
+        compare_replay(expected, actual)
+        self.assertEqual(expected["environment"]["python"], "3.12")
+        bad = copy.deepcopy(actual)
+        bad["source_sha256"]["original.py"] = "changed"
+        with self.assertRaisesRegex(ValueError, "recorded experiment source differs"):
+            compare_replay(expected, bad)
+        bad = copy.deepcopy(actual)
+        bad["metric"] = 0.6
+        with self.assertRaises(ValueError):
+            compare_replay(expected, bad)

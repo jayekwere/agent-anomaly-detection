@@ -1,6 +1,7 @@
 """Validate fresh experiment artifacts and compare a replay with recorded evidence."""
 
 import argparse
+import copy
 import json
 import math
 from pathlib import Path
@@ -73,6 +74,21 @@ def compare(expected: object, actual: object, path: str = "root") -> None:
         raise ValueError("artifact values differ")
 
 
+def compare_replay(expected: dict, actual: dict) -> None:
+    expected, actual = copy.deepcopy(expected), copy.deepcopy(actual)
+    expected["environment"].pop("python")
+    actual["environment"].pop("python")
+    # New independent experiment modules may coexist with archived experiments.
+    # Every source file in the archived manifest must still exist and match.
+    for name, fingerprint in expected["source_sha256"].items():
+        if actual["source_sha256"].get(name) != fingerprint:
+            raise ValueError("recorded experiment source differs: " + name)
+    actual["source_sha256"] = {
+        name: actual["source_sha256"][name] for name in expected["source_sha256"]
+    }
+    compare(expected, actual)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("actual", type=Path)
@@ -81,10 +97,7 @@ def main() -> None:
     actual = validate(args.actual)
     if args.reference:
         expected = validate(args.reference)
-        # Python versions legitimately differ; dependency versions must match.
-        expected["environment"].pop("python")
-        actual["environment"].pop("python")
-        compare(expected, actual)
+        compare_replay(expected, actual)
     print("Sequence artifact invariants and requested reference comparison passed.")
 
 

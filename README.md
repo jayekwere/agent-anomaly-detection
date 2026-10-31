@@ -58,6 +58,25 @@ The improvement is limited: it misses all 16 reader-population sequence anomalie
 
 [Sequence methodology and leakage controls](docs/SEQUENCE_BASELINE.md), [calculated report](evaluation/sequence-v1/report.md), and [full results](evaluation/sequence-v1/results.json) include the fixed design, paired actor-cluster uncertainty, drift/mixed controls, per-population misses and count-preserving order diagnostic.
 
+## Combined rules-plus-sequence follow-up
+
+A fixed maximum of validation-scaled rules and sequence scores feeds **one shared queue**, capped at 24 unique sessions per 1,200-session batch. A new mixed held-out set includes all four anomaly families; independent sequence/non-sequence controls expose the tradeoffs.
+
+| Primary fresh mixed set (62 anomalies) | AP | True / false alerts | Recall |
+|---|---:|---:|---:|
+| Rules | 0.201 | 5 / 9 | 0.081 |
+| Sequence | 0.275 | 12 / 12 | 0.194 |
+| Combined | 0.393 | 11 / 8 | 0.177 |
+
+Combination improves AP and precision here, but loses recall versus sequence alone. At exactly 24 reviews, sequence and combination tie at 12 true / 12 false alerts, while covering different scenarios. The combined threshold admits only 19 alerts; the shared cap is not binding. **All 9 primary reader-sequence anomalies remain missed**, as do all 27 in the sequence control. Fusion is not promoted over the existing reference.
+
+```sh
+.venv/bin/python -m agent_anomaly.combined_experiment --output artifacts/combined
+.venv/bin/python scripts/verify_combined_results.py artifacts/combined/results.json --reference evaluation/combined-v1/results.json
+```
+
+[Combined methodology and tradeoffs](docs/COMBINED_BASELINE.md), [calculated report](evaluation/combined-v1/report.md), and [full results](evaluation/combined-v1/results.json) document the frozen design, score scales, single cap, gained/lost detections, reader misses, equal-workload reviews and uncertainty. These are new instances of inspected synthetic families.
+
 ## Scenarios and trust boundaries
 
 The generator includes denial probing, export concentration, frequency shifts, and held-out reordered tool sequences. Reader, operator and batch populations can legitimately export, request administrative tools, incur denials and operate quickly. These overlaps create benign alert candidates and prevent an attack-only tool shortcut. New tenant/actor/tool relationships are exposed as novelty evidence; they are not verified attack coverage. Policy-change and privileged-boundary hypotheses require source context beyond an anomaly score.
@@ -76,10 +95,11 @@ The [legacy notebook](legacy/research/agent_anomaly_detection.ipynb) used in-sam
 .venv/bin/python -m pip install -r requirements-dev.lock
 .venv/bin/python -m coverage run -m unittest -v
 .venv/bin/python -m coverage run --append -m agent_anomaly.sequence_experiment --output artifacts/sequence
+.venv/bin/python -m coverage run --append -m agent_anomaly.combined_experiment --output artifacts/combined
 .venv/bin/python -m coverage report
-.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
-.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
-.venv/bin/python -m bandit -r agent_anomaly -q
+.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
+.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
+.venv/bin/python -m bandit -r agent_anomaly scripts -q
 .venv/bin/python -m pip_audit -r requirements.txt --no-deps --disable-pip
 .venv/bin/python -m agent_anomaly --output artifacts/replay
 ```

@@ -13,6 +13,7 @@ import numpy as np
 from . import correlate
 from .data import generate
 from .evaluation import measure
+from .detectors import budget
 from .fusion import RulesSequenceFusion
 from .sequence_experiment import FrozenComparison, chronological_check, digest
 
@@ -134,11 +135,23 @@ def evaluate_batch(
                 mask = np.array([truth[k][field] == value for k in keys])
                 m["by_" + field][value] = measure(labels[mask], s[mask], decisions[name][mask])
         detected = int((decisions[name] & reader_sequence).sum())
+        ranked = budget(s, model.review_budget)
+        m["full_budget_review"] = {
+            **counts(ranked, labels),
+            "reader_sequence_detected": int((ranked & reader_sequence).sum()),
+            "reader_sequence_missed": int((reader_sequence & ~ranked).sum()),
+            "by_scenario": {
+                scenario: counts(
+                    ranked & np.array([truth[k]["scenario"] == scenario for k in keys]), labels
+                )
+                for scenario in sorted({truth[k]["scenario"] for k in keys})
+            },
+        }
         m["reader_sequence"] = {
             "positives": int(reader_sequence.sum()),
             "detected": detected,
             "missed": int(reader_sequence.sum()) - detected,
-            "recall": detected / max(1, int(reader_sequence.sum())),
+            "recall": detected / int(reader_sequence.sum()) if reader_sequence.any() else None,
         }
         result["models"][name] = m
     selected = decisions[COMBINED]
@@ -151,6 +164,10 @@ def evaluate_batch(
         "unique_alerts": int(selected.sum()),
         "component_candidate_union": int(((rules_scaled > 1) | (seq_scaled > 1)).sum()),
         "combined_threshold_candidates": int((fusion_scores > model.fusion.threshold).sum()),
+        "excluded_by_combined_threshold": int(
+            ((rules_scaled > 1) | (seq_scaled > 1)).sum()
+            - (fusion_scores > model.fusion.threshold).sum()
+        ),
         "suppressed_by_shared_cap": int(
             (fusion_scores > model.fusion.threshold).sum() - selected.sum()
         ),
@@ -172,6 +189,14 @@ def evaluate_batch(
             "lost": counts(lost, labels),
             "reader_sequence_gained": int((gained & reader_sequence).sum()),
             "reader_sequence_lost": int((lost & reader_sequence).sum()),
+        }
+    result["full_budget_alert_changes"] = {}
+    combined_ranked = budget(scores[COMBINED], model.review_budget)
+    for reference in ["rules", "markov_deviance"]:
+        reference_ranked = budget(scores[reference], model.review_budget)
+        result["full_budget_alert_changes"][reference] = {
+            "gained": counts(combined_ranked & ~reference_ranked, labels),
+            "lost": counts(reference_ranked & ~combined_ranked, labels),
         }
     result["paired_recall_comparisons"] = paired_differences(keys, labels, decisions, settings)
     ranks = np.empty(len(keys), dtype=int)
@@ -283,8 +308,21 @@ def report(result: dict) -> str:
         ]
         for name, m in entry["models"].items():
             r = m["reader_sequence"]
+            recall_text = f"{r['recall']:.3f}" if r["recall"] is not None else "n/a"
             lines.append(
-                f"| {name} | {r['positives']} | {r['detected']} | {r['missed']} | {r['recall']:.3f} |"
+                f"| {name} | {r['positives']} | {r['detected']} | {r['missed']} | {recall_text} |"
+            )
+        lines += [""]
+        lines += [
+            "Exactly-full-budget reviews (thresholds ignored; one shared top-24 ranking):",
+            "",
+            "| Detector | True positives | False positives | Reader-sequence detected | Reader-sequence missed |",
+            "|---|---:|---:|---:|---:|",
+        ]
+        for name, m in entry["models"].items():
+            full = m["full_budget_review"]
+            lines.append(
+                f"| {name} | {full['true_positives']} | {full['false_positives']} | {full['reader_sequence_detected']} | {full['reader_sequence_missed']} |"
             )
         lines += [""]
         for ref, change in entry["alert_changes"].items():
