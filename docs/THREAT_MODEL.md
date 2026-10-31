@@ -1,0 +1,7 @@
+# Threat model
+
+Assets are tenant-isolated behavioral histories, integrity of evaluation labels/splits, bounded processing, and privacy of analyst reports. The trusted boundary includes the generator, experiment code, dependency lock, and analyst-provided correlation identity. Incoming audit records, timestamps and optional source payloads are untrusted.
+
+An attacker or faulty producer can duplicate events, supply invalid versions/timestamps, flood sessions, forge identity metadata, suppress events, poison baseline behavior or imitate authorized tool sequences. Validation rejects malformed records and bounded correlation rejects excess volume. Tenant and actor keys isolate histories. Payload exclusion reduces report leakage. Fixed historical fit and explicit chronology checks prevent accidental test adaptation. The system does not authenticate upstream identity, establish audit completeness, verify hash chains, or prevent semantic poisoning. Poisoning can normalize malicious behavior; the stress test verifies explicit bounded operation, not effective poisoning defense.
+
+Tool vocabulary and event frequency alone cannot establish authorization context or intent. A policy rollout may create legitimate novelty. The appropriate response is contextual analyst review and review of collection quality, followed by separately authorized recalibration. Never automatically revoke access based on these scores.

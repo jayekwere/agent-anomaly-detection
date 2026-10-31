@@ -7,9 +7,9 @@ on:
 permissions:
   contents: read
 jobs:
-  regression:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       matrix:
         python: ['3.12', '3.13']
@@ -20,16 +20,22 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install -r requirements.txt
-      - run: python -m unittest -v
-      - name: Replay the recorded evaluation
-        if: matrix.python == '3.12'
-        run: python evaluate.py --output artifacts/results.json
-      - name: Retain evaluation output
-        if: always() && matrix.python == '3.12'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m ruff check agent_anomaly test_audit.py
+      - run: python -m ruff format --check agent_anomaly test_audit.py
+      - run: python -m coverage run -m unittest -v
+      - run: python -m coverage report
+      - run: python -m bandit -r agent_anomaly -q
+      - run: python -m pip_audit -r requirements.txt --no-deps --disable-pip
+      - run: python -m agent_anomaly --output artifacts/first
+      - run: python -m agent_anomaly --output artifacts/second
+      - run: diff -r artifacts/first artifacts/second
+      - run: python -c "from pathlib import Path; from agent_anomaly.artifacts import validate; validate(Path('artifacts/first/results.json'))"
+      - run: python evaluate.py --output artifacts/historical.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
         with:
-          name: evaluation-${{ github.run_id }}
-          path: artifacts/results.json
+          name: evaluation-python-${{ matrix.python }}
+          path: artifacts/
           retention-days: 14
           if-no-files-found: error
