@@ -10,7 +10,7 @@ The scaler and forest fit only the training features. The forest uses `contamina
 
 ## Recorded results
 
-Local execution on October 27, 2026, Python 3.14.6 with pinned dependencies: **6 regression tests passed**, including rejection of overlapping session IDs and checks that changing test features or labels cannot change the selected threshold. [Full results](evaluation/results.json) include source/feature hashes, versions and confusion matrices.
+Local execution on October 27, 2026, Python 3.14.6 with pinned dependencies: **6 regression tests passed**, including rejection of overlapping session IDs and checks that changing test features or labels cannot change the selected threshold. [Full results](../evaluation/results.json) include source/feature hashes, versions and confusion matrices.
 
 | Held-out test result | ROC-AUC | Average precision | Precision | Recall |
 | --- | ---: | ---: | ---: | ---: |
@@ -31,7 +31,7 @@ python -m unittest -v
 python evaluate.py
 ```
 
-The [CI workflow](.github/workflows/evaluation.yml) runs regression tests on Python 3.12/3.13 and the full generated evaluation on Python 3.12. It retains the measured output for 14 days. No external dataset or account credentials are needed.
+The [CI workflow](../.github/workflows/evaluation.yml) runs regression tests on Python 3.12/3.13 and the full generated evaluation on Python 3.12. It retains the measured output for 14 days. No external dataset or account credentials are needed.
 
 ## Earlier experiments and limits
 
@@ -41,4 +41,4 @@ The current script removes those evaluation shortcuts. It still uses one synthet
 
 ## Hosted verification
 
-[Run #40524556899](https://github.com/jayekwere/agent-anomaly-detection/actions/runs/40524556899) passed for implementation commit `4c60df8`: **6 regression tests on each of Python 3.12 and 3.13**, plus the complete held-out evaluation on Python 3.12.15. The downloaded [hosted results](evaluation/hosted-results.json) match the recorded test metrics above, including the baseline outperforming the forest. [Artifact/source verification](evaluation/hosted-verification.json) records the exact hashes; the local and hosted runs remain separate files.
+[Run #40524556899](https://github.com/jayekwere/agent-anomaly-detection/actions/runs/40524556899) passed for implementation commit `4c60df8`: **6 regression tests on each of Python 3.12 and 3.13**, plus the complete held-out evaluation on Python 3.12.15. The downloaded [hosted results](../evaluation/hosted-results.json) match the recorded test metrics above, including the baseline outperforming the forest. [Artifact/source verification](../evaluation/hosted-verification.json) records the exact hashes; the local and hosted runs remain separate files.
