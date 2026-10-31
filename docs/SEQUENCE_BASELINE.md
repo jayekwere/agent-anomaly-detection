@@ -40,7 +40,7 @@ On **fresh_sequence_drift**, Markov AP is **0.355** and recall **0.235**, with *
 
 ## Count-preserving order diagnostic
 
-For each primary-test session, one fixed random permutation changes only the tool order; event IDs, actor/tenant scope, timestamps, outcomes, length and tool multiset remain unchanged. In all 54 original sequence anomalies, the original Markov score exceeds the shuffled score; the median difference is **+1.134**. For original benign sessions the median difference is approximately zero and **49.4%** have a higher original score. This supports order sensitivity, rather than a claim based solely on tool counts. It is one permutation, not a permutation significance test; the shuffled sessions are not relabelled and scored as attack efficacy evidence.
+For each primary-test session, one fixed random permutation changes only the tool order; event IDs, actor/tenant scope, timestamps, outcomes, length and tool multiset remain unchanged. In all 54 original sequence anomalies, the original Markov score exceeds the shuffled score; the median difference is **+1.134**. For original benign sessions the median difference is approximately zero and **49.3%** have a higher original score. This supports order sensitivity, rather than a claim based solely on tool counts. It is one permutation, not a permutation significance test; the shuffled sessions are not relabelled and scored as attack efficacy evidence.
 
 ## Reproduce and interpret
 
