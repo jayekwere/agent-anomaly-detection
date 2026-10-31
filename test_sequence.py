@@ -158,3 +158,38 @@ class ComparisonTests(unittest.TestCase):
         )
         self.assertEqual(result["rules"]["markov_minus_reference_recall"], 0)
         self.assertEqual(result["rules"]["cluster_bootstrap_95_interval"], [0.0, 0.0])
+
+
+class SequenceArtifactTests(unittest.TestCase):
+    def test_recorded_results_and_corruptions(self):
+        from pathlib import Path
+        import tempfile
+        from scripts.verify_sequence_results import compare, validate
+
+        source = Path(__file__).parent / "evaluation/sequence-v1/results.json"
+        data = validate(source)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            for mutation in ["budget", "missing_detector", "group_counts"]:
+                bad = copy.deepcopy(data)
+                metrics = bad["tests"]["fresh_sequence"]["models"]["markov_deviance"]
+                if mutation == "budget":
+                    metrics["alerts"] = 1000
+                elif mutation == "missing_detector":
+                    del bad["tests"]["fresh_sequence"]["models"]["rules"]
+                else:
+                    metrics["by_population"]["reader"]["false_positives"] += 1
+                path.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError):
+                    validate(path)
+        compare(data, copy.deepcopy(data))
+        bad = copy.deepcopy(data)
+        bad["thresholds"]["markov_deviance"] += 0.01
+        with self.assertRaisesRegex(ValueError, "numbers differ"):
+            compare(data, bad)
+
+    def test_declared_test_periods_and_seeds_are_fresh(self):
+        plan = json.loads(DEFAULT_PLAN.read_text())
+        self.assertTrue(all(batch["day"] > 8 for batch in plan["test_batches"]))
+        self.assertFalse({42, 43, 48, 50, 52} & {b["seed"] for b in plan["test_batches"]})
+        self.assertEqual(plan["sequence_model"]["additive_smoothing"], 1.0)

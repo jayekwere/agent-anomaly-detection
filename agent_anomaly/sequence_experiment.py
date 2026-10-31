@@ -17,7 +17,7 @@ from .evaluation import measure
 from .features import Features
 from .sequence import MarkovDeviance
 
-DEFAULT_PLAN = Path(__file__).resolve().parent.parent / "experiments/sequence-v1.json"
+DEFAULT_PLAN = Path(__file__).resolve().parent / "plans/sequence-v1.json"
 
 
 def digest(value: object) -> str:
@@ -240,6 +240,15 @@ def report(result: dict) -> str:
             f"### {batch}: {entry['positives']} positives in {entry['sessions']} sessions",
             "",
         ]
+        lines += [
+            "| Markov population | Recall | True positives | False positives |",
+            "|---|---:|---:|---:|",
+        ]
+        for population, m in entry["models"]["markov_deviance"]["by_population"].items():
+            lines.append(
+                f"| {population} | {m['recall']:.3f} | {m['true_positives']} | {m['false_positives']} |"
+            )
+        lines += [""]
         for name, comparison in entry["paired_recall_comparisons"].items():
             lo, hi = comparison["cluster_bootstrap_95_interval"]
             lines.append(
