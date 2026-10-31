@@ -43,6 +43,21 @@ The forest does not justify promotion over the simpler methods in the held-out e
 
 [Calculated report](evaluation/v2/report.md) and [complete JSON](evaluation/v2/results.json) contain ROC-AUC, AP, precision/recall at 1%, 2%, and 5% budgets, per-scenario/population breakdowns, confidence intervals, drift warnings and false-positive/negative feature evidence. A validation quantile never guarantees a future false-positive rate.
 
+## Sequence-aware follow-up
+
+A separate, predeclared follow-up fits an actor-scoped, smoothed first-order transition-deviance baseline and compares all four detectors on **fresh chronological test instances**, keeping the v2 results above intact.
+
+On 1,200 fresh sequence-test sessions (54 anomalies), the new baseline achieves **AP 0.515**, **recall 0.278**, and **precision 0.625**: 15 true and 9 false alerts at the 24-alert cap. Existing detectors have zero calibrated recall on the same sessions. At an equal 24-session ranking budget, recall is 0.000 for rules, 0.074 for robust distance, 0.037 for Isolation Forest, and 0.278 for the new baseline.
+
+The improvement is limited: it misses all 16 reader-population sequence anomalies, produces more false alerts, and performs worse than the existing methods on a fresh mixed-scenario batch (AP 0.182 versus 0.378/0.472/0.345). This supports a specialized sequence baseline, without replacing the general reference. Fresh instances of an inspected family do not establish blind unseen-family generalization.
+
+```sh
+.venv/bin/python -m agent_anomaly.sequence_experiment --output artifacts/sequence
+.venv/bin/python scripts/verify_sequence_results.py artifacts/sequence/results.json --reference evaluation/sequence-v1/results.json
+```
+
+[Sequence methodology and leakage controls](docs/SEQUENCE_BASELINE.md), [calculated report](evaluation/sequence-v1/report.md), and [full results](evaluation/sequence-v1/results.json) include the fixed design, paired actor-cluster uncertainty, drift/mixed controls, per-population misses and count-preserving order diagnostic.
+
 ## Scenarios and trust boundaries
 
 The generator includes denial probing, export concentration, frequency shifts, and held-out reordered tool sequences. Reader, operator and batch populations can legitimately export, request administrative tools, incur denials and operate quickly. These overlaps create benign alert candidates and prevent an attack-only tool shortcut. New tenant/actor/tool relationships are exposed as novelty evidence; they are not verified attack coverage. Policy-change and privileged-boundary hypotheses require source context beyond an anomaly score.
@@ -60,9 +75,10 @@ The [legacy notebook](legacy/research/agent_anomaly_detection.ipynb) used in-sam
 ```sh
 .venv/bin/python -m pip install -r requirements-dev.lock
 .venv/bin/python -m coverage run -m unittest -v
+.venv/bin/python -m coverage run --append -m agent_anomaly.sequence_experiment --output artifacts/sequence
 .venv/bin/python -m coverage report
-.venv/bin/python -m ruff check agent_anomaly test_audit.py
-.venv/bin/python -m ruff format --check agent_anomaly test_audit.py
+.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
+.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
 .venv/bin/python -m bandit -r agent_anomaly -q
 .venv/bin/python -m pip_audit -r requirements.txt --no-deps --disable-pip
 .venv/bin/python -m agent_anomaly --output artifacts/replay
