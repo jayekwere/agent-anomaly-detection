@@ -21,11 +21,10 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -r requirements-dev.lock
-      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
-      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py scripts/verify_sequence_results.py
+      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
+      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
       - run: python -m coverage run -m unittest -v
-      - run: python -m coverage report
-      - run: python -m bandit -r agent_anomaly scripts/verify_sequence_results.py -q
+      - run: python -m bandit -r agent_anomaly scripts -q
       - run: python -m pip_audit -r requirements.txt --no-deps --disable-pip
       - run: python -m agent_anomaly --output artifacts/first
       - run: python -m agent_anomaly --output artifacts/second
@@ -33,9 +32,13 @@ jobs:
       - run: python -c "from pathlib import Path; from agent_anomaly.artifacts import validate; validate(Path('artifacts/first/results.json'))"
       - run: python -m coverage run --append -m agent_anomaly.sequence_experiment --output artifacts/sequence-first
       - run: python -m agent_anomaly.sequence_experiment --output artifacts/sequence-second
-      - run: python -m coverage report
       - run: diff -r artifacts/sequence-first artifacts/sequence-second
       - run: python scripts/verify_sequence_results.py artifacts/sequence-first/results.json --reference evaluation/sequence-v1/results.json
+      - run: python -m coverage run --append -m agent_anomaly.combined_experiment --output artifacts/combined-first
+      - run: python -m agent_anomaly.combined_experiment --output artifacts/combined-second
+      - run: python -m coverage report
+      - run: diff -r artifacts/combined-first artifacts/combined-second
+      - run: python scripts/verify_combined_results.py artifacts/combined-first/results.json --reference evaluation/combined-v1/results.json
       - run: python evaluate.py --output artifacts/historical.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()

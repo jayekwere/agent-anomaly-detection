@@ -1,0 +1,45 @@
+{
+  "experiment": "combined-v1",
+  "schema_version": 4,
+  "design_status": "Committed locally before fresh test generation or scoring; motivated by previously inspected rules/sequence tradeoffs.",
+  "training": {"seed": 42, "day": 0, "count": 1200},
+  "validation": {"seed": 43, "day": 2, "count": 1200},
+  "sequence_model": {"additive_smoothing": 1.0},
+  "calibration": {"quantile": 0.98, "method": "higher", "strict_greater_than": true},
+  "review_budget": 0.02,
+  "fusion": {
+    "components": ["rules", "markov_deviance"],
+    "scale": "Each component's unlabelled validation 98th percentile; fail explicitly if nonpositive.",
+    "score": "maximum of rules/validation_rule_scale and sequence/validation_sequence_scale",
+    "threshold": "98th percentile of combined validation scores, strict greater-than",
+    "budget": "Apply floor(0.02 * batch_sessions) once to combined threshold candidates; deduplicate by correlated session before ranking. No per-component alert quotas or union of separately budgeted alerts.",
+    "weights_tuned": false,
+    "population_specific_calibration": false
+  },
+  "test_batches": [
+    {"name": "fresh_joint", "parts": [
+      {"seed": 8112601, "day": 16, "count": 600, "unseen": false},
+      {"seed": 8112602, "day": 16, "count": 600, "unseen": true}
+    ]},
+    {"name": "fresh_sequence_control", "parts": [
+      {"seed": 8112603, "day": 18, "count": 1200, "unseen": true}
+    ]},
+    {"name": "fresh_nonsequence_control", "parts": [
+      {"seed": 8112604, "day": 20, "count": 1200, "unseen": false}
+    ]}
+  ],
+  "mixture": "Use every session from each independent generator stream; no label-based sampling, filtering or balancing. Prefix session/event IDs by neutral stream index to avoid collisions. Prefixes are excluded from scoring features. Original generator is unchanged.",
+  "primary": "Combined calibrated/capped recall and workload versus standalone rules and sequence on fresh_joint, including reader sequence misses.",
+  "comparators": ["rules", "robust_distance", "isolation_forest", "markov_deviance", "rules_plus_sequence"],
+  "secondary": ["equal 24-session ranking-budget recall", "average_precision", "precision", "false_alerts_per_1000_sessions", "scenario/population intersections", "alerts gained/lost versus each standalone detector", "signal dominance in the shared queue", "candidate suppression by shared cap"],
+  "paired_uncertainty": {"unit": "tenant_actor_cluster", "replicates": 500, "seed": 9003, "refit_thresholds": false, "rerank_alerts": false},
+  "promotion_policy": "Report every predeclared batch and comparator. Do not tune fusion, seed, threshold or population weights after inspecting test results; keep the general reference unchanged.",
+  "limitations": [
+    "Fresh instances of already inspected synthetic families; not blind family validation.",
+    "Maximum fusion can favor one component's extreme tail and displace useful alerts from the other.",
+    "A shared global cap and global calibration provide no reader-specific recall guarantee.",
+    "Validation is reused for unsupervised score scaling and threshold calibration; this is not an independent false-positive-rate guarantee.",
+    "Actor-cluster bootstrap intervals condition on fitted models and fixed alert decisions and omit training/calibration and reranking uncertainty.",
+    "No automatic promotion, malicious-activity probability, or production efficacy claim."
+  ]
+}
