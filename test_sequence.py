@@ -5,7 +5,6 @@ import copy
 from datetime import UTC, datetime, timedelta
 import json
 import math
-from pathlib import Path
 import unittest
 
 import numpy as np
@@ -100,7 +99,7 @@ class SequenceTests(unittest.TestCase):
 class ComparisonTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.train, _ = generate(42, 0, count=90)
+        cls.train, _ = generate(42, 0, count=1200)
         cls.validation, _ = generate(43, 2, count=90)
         cls.plan = json.loads(DEFAULT_PLAN.read_text())
         cls.model = FrozenComparison().fit(cls.train, cls.validation, cls.plan)
