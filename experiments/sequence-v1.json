@@ -1,0 +1,32 @@
+{
+  "experiment": "sequence-v1",
+  "schema_version": 3,
+  "hypothesis": "Frequency-sensitive transition deviance improves reordered-tool detection compared with transition-presence features.",
+  "design_status": "Fixed before generating or scoring the fresh test batches; motivated by the previously inspected v2 sequence-family failure.",
+  "training": {"seed": 42, "day": 0, "count": 1200},
+  "validation": {"seed": 43, "day": 2, "count": 1200},
+  "test_batches": [
+    {"name": "fresh_sequence", "seed": 7312026, "day": 10, "count": 1200, "unseen": true, "drift": false},
+    {"name": "fresh_mixed", "seed": 7312027, "day": 12, "count": 1200, "unseen": false, "drift": false},
+    {"name": "fresh_sequence_drift", "seed": 7312028, "day": 14, "count": 1200, "unseen": true, "drift": true}
+  ],
+  "sequence_model": {
+    "name": "markov_deviance",
+    "order": 1,
+    "additive_smoothing": 1.0,
+    "scope": "tenant_actor",
+    "unknown_tool": "reserved bucket within fitted actor vocabulary",
+    "unknown_actor": "explicit error; no pooling across tenants or actors",
+    "score": "2 times mean conditional transition log likelihood ratio: empirical session next-tool probabilities versus smoothed training next-tool probabilities",
+    "labels_used_for_fit": false,
+    "cross_session_transitions": false
+  },
+  "calibration": {"quantile": 0.98, "method": "higher", "strict_greater_than": true},
+  "review_budget": 0.02,
+  "primary_comparison": "fresh_sequence calibrated and capped recall against rules, robust_distance and isolation_forest on identical sessions",
+  "secondary_metrics": ["average_precision", "precision", "false_alerts_per_1000_sessions", "recall_at_fixed_review_budgets", "per_population"],
+  "paired_uncertainty": {"unit": "tenant_actor_cluster", "replicates": 500, "seed": 9001, "refit_thresholds": false, "rerank_alerts": false},
+  "order_control": {"seed": 9002, "method": "one within-session random tool permutation, leaving timestamps, outcomes and tool multisets intact; score diagnostic only, not a new labeled attack test"},
+  "promotion_policy": "Report all predeclared batches and comparators; do not tune, replace the reference detector or choose seeds after seeing fresh test results.",
+  "limitations": ["Fresh instances of an already inspected synthetic family, not a blind family holdout.", "Length-normalized empirical transition deviance retains finite-sample and tool-composition effects.", "First-order transitions cannot distinguish sequences sharing transition counts.", "Training labels remain unused despite contamination; no production efficacy claim."]
+}
