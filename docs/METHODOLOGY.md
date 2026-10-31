@@ -1,0 +1,23 @@
+# Security hypotheses and experiment design
+
+The observation unit is a completed tenant/actor/session, not an incident. Hypotheses are increased denials (boundary probing), export concentration (abnormal access), privileged requests, frequency shifts, and uncommon transitions or actor/tool relationships. Anomaly evidence supports investigation, never attribution or confirmed attack classification.
+
+Training starts on synthetic January 1; validation January 3; held-out January 5; unseen sequence January 7; drift January 9. Each period has 1,200 sessions with stochastic 5% anomaly prevalence. Seeds are fixed. Two tenants and reader/operator/batch populations share tools and overlapping behavior. Benign batch exports, administrator calls, denials and fast activity intentionally confound detection. Labels live in a separate mapping and are never passed to features, fitting or calibration. Training is contaminated; it is not filtered using labels.
+
+Feature history is tenant/actor scoped, accumulated only during training, then frozen. Training features use earlier completed sessions only. Validation and test are transformed against this frozen reference. Longitudinal rate changes compare against the most recent training session, not an adaptive production profile. There is no fitted scaler using future samples. Session periods and IDs are asserted disjoint and chronological. Actors recur intentionally; this evaluates future behavior of known actors, not identity-disjoint generalization.
+
+All detectors calibrate on the unlabelled validation 98th percentile with strict greater-than ties. Runtime top-k selection caps each synthetic evaluation batch at floor(0.02 * sessions); deterministic stable input order breaks ties. This cap is a batch workload control, not an online daily SLA. Fixed-budget ranking metrics are separate from thresholded capped alert metrics. No future 2% false-positive guarantee exists.
+
+Rules score denial/export/privileged proportions against declared reference rates; robust distance averages positive median/IQR deviations with a scale floor; Isolation Forest uses 200 trees and seed 42. Rules are a predeclared interpretable reference, not a claim of empirical superiority. AP measures ranking under the generated prevalence; ROC-AUC can look favorable under imbalance. Per-scenario recall and false positives matter more than aggregate accuracy. Bootstrap recall intervals resample sessions 300 times; actor dependence and generator uncertainty limit their interpretation. No real incident detection latency is measured: this is completed-session analysis.
+
+Unseen sequence anomalies reorder existing tools without adding an attack-only token. The coarse transition feature may fail these cases, and that failure is part of the evidence. Drift speeds up both benign and anomalous sessions; training-range exceedance is a warning, not a statistical drift guarantee. Contamination regression checks bounded operation under 50% altered sessions, not resistance to a sophisticated poisoning adversary.
+
+## Source compatibility
+
+Read-only review used MCP Sentinel `src/store.ts`, `src/gateway.ts`, `evidence/sentinel-events.json`, and CloudThreat Lab `docs/EVENTS.md`, `fixtures/sentinel-export.json`. Both share `seq/at/tenant/actor/action/outcome/detail/prev/hash` envelopes. `sentinel_v1` is an explicitly named projection of that format. Caller-supplied session context is mandatory because the source does not record sessions. Sequence IDs require one stream per tenant; callers must namespace IDs before combining independent streams. Hash chains are not authenticated here. No gateway, policy, authentication or deterministic cloud engine is recreated.
+
+## Privacy and observability
+
+Only synthetic aliases are allowed in published examples. Production use would require approved pseudonymization, retention and access controls outside this repository. Ingest discards payloads, args, credentials and arbitrary detail. Tool names and identifiers must be bounded tokens; token validation is not anonymization. Reports emit synthetic session IDs and numeric features only. Required observability includes reliable tenant, actor, session, unique event identity, timezone-aware time, stable tool identity and outcome. Missing or corrupt inputs reject the batch with field-only errors. Upstream identity authenticity, event loss, clock skew and fabricated events remain trust boundaries.
+
+Reviewed local source revisions: MCP Sentinel `7cc51f64848ee604818c95533f1697189b9e3c07`; CloudThreat Lab `ad25d0a19aec1d5fc4bf250e311e9613e1b9b48f`. Those repositories were read only. Source manifests in v2 results bind the new experiment implementation to its recorded output.

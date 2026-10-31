@@ -1,44 +1,77 @@
-# Agent Anomaly Detection
+# AI Agent Behavioral Anomaly Evaluation
 
-Isolation Forest experiments on synthetic access sessions. The current evaluation separates training, threshold selection and testing, and compares the model with a simple sensitive-action-rate baseline.
+A reproducible, offline research system for evaluating suspicious behavior in structured AI-agent audit events. It compares an interpretable rule baseline, robust statistical distance and Isolation Forest under a fixed analyst review budget. **Synthetic evidence only; anomalies are not confirmed attacks.**
 
-## Method
+## Run offline
 
-Three independently generated sets use seeds 42, 43 and 44. Each contains 2,000 normal and 100 subtly altered sessions, with disjoint session IDs. Features are action frequencies, transition entropy and session length. Normal sessions can include sensitive actions too; there is no attack-only indicator.
-
-The scaler and forest fit only the training features. The forest uses `contamination="auto"`, and its built-in binary prediction threshold is not used. A chosen **2% review budget** sets the threshold from unlabelled validation scores, excluding ties at that threshold. Labels are used only to measure results, not to fit or choose a threshold. The held-out test set is scored once with that fixed threshold. The simple baseline uses the same selection rule.
-
-## Recorded results
-
-Local execution on October 27, 2026, Python 3.14.6 with pinned dependencies: **6 regression tests passed**, including rejection of overlapping session IDs and checks that changing test features or labels cannot change the selected threshold. [Full results](evaluation/results.json) include source/feature hashes, versions and confusion matrices.
-
-| Held-out test result | ROC-AUC | Average precision | Precision | Recall |
-| --- | ---: | ---: | ---: | ---: |
-| isolationForest | 0.7290 | 0.1062 | 0.1429 | 0.0700 |
-| sensitiveActionRate | 0.8288 | 0.1849 | 0.2258 | 0.0700 |
-
-Isolation Forest found **7 of 100 anomalies**, with **42 false alerts** and 93 misses. The simple baseline found the same 7, with 24 false alerts. The model did not beat that baseline. Its test alert rate was 2.33%; a validation review budget does not guarantee a fixed rate on later data.
-
-## Reproduce
-
-Python 3.12+:
+Python 3.12 or later. Install once, then the experiment requires no network, cloud account or API credentials:
 
 ```sh
 python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m unittest -v
-python evaluate.py
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m agent_anomaly
 ```
 
-The [CI workflow](.github/workflows/evaluation.yml) runs regression tests on Python 3.12/3.13 and the full generated evaluation on Python 3.12. It retains the measured output for 14 days. No external dataset or account credentials are needed.
+The last command creates `artifacts/results.json` and `artifacts/report.md`. Repeated runs in the same pinned environment produce identical artifacts. Installation requires package access; “offline” describes execution after installation.
 
-## Earlier experiments and limits
+## Architecture
 
-The saved notebook is historical: its easier generator scored about 0.99 ROC-AUC, and a revised generator scored about 0.75. Those experiments fitted and evaluated on the same samples and supplied the true synthetic contamination rate. They are not held-out performance claims.
+```mermaid
+flowchart LR
+  A[Versioned audit fixtures / Sentinel projection] --> B[Validate and bound inputs]
+  B --> C[Tenant + actor + session correlation]
+  C --> D[Time-aware behavioral features]
+  D --> E[Rules / robust distance / Isolation Forest]
+  E --> F[Validation-only thresholds]
+  F --> G[Batch review cap]
+  G --> H[JSON evidence + Markdown report]
+```
 
-The current script removes those evaluation shortcuts. It still uses one synthetic generator family, so disjoint sessions do not establish performance on real users, changing behavior or unseen attack families. The generator's labels are not proof of malicious intent. The low recall and false-alert count remain part of the result, not issues hidden by the passing regression tests.
+`agent_anomaly.ingestion` reads bounded JSONL and projects Sentinel envelopes; `features` isolates history by tenant and actor; `data` generates overlapping behavior populations; `detectors` fits without labels; `evaluation` calculates ranking, review workload, group metrics and uncertainty; the CLI orchestrates time-separated experiments. This package does not implement authentication, policy enforcement or a cloud detection engine.
 
-## Hosted verification
+## Measured synthetic results
 
-[Run #40524556899](https://github.com/jayekwere/agent-anomaly-detection/actions/runs/40524556899) passed for implementation commit `4c60df8`: **6 regression tests on each of Python 3.12 and 3.13**, plus the complete held-out evaluation on Python 3.12.15. The downloaded [hosted results](evaluation/hosted-results.json) match the recorded test metrics above, including the baseline outperforming the forest. [Artifact/source verification](evaluation/hosted-verification.json) records the exact hashes; the local and hosted runs remain separate files.
+1,200 held-out sessions, including 64 generated anomalies. Thresholds use unlabelled validation only; final alerts are capped at 24 per batch.
+
+| Detector | AP | Precision | Recall | False alerts / 1,000 | Alerts |
+|---|---:|---:|---:|---:|---:|
+| Rule reference | 0.384 | 0.786 | 0.172 | 2.50 | 14 |
+| Robust distance | 0.389 | 0.733 | 0.172 | 3.33 | 15 |
+| Isolation Forest | 0.253 | 0.412 | 0.109 | 8.33 | 17 |
+
+The forest does not justify promotion over the simpler methods in the held-out experiment. Robust distance has slightly higher AP, while rules yield fewer false alerts at the calibrated operating point. Rules remain the predeclared interpretable reference. Under drift, the forest recovers more positives at the cost of extra false alerts. **Unseen sequence recall is 0.019 for rules and zero for both challengers**: this feature set does not establish useful detection of that family.
+
+[Calculated report](evaluation/v2/report.md) and [complete JSON](evaluation/v2/results.json) contain ROC-AUC, AP, precision/recall at 1%, 2%, and 5% budgets, per-scenario/population breakdowns, confidence intervals, drift warnings and false-positive/negative feature evidence. A validation quantile never guarantees a future false-positive rate.
+
+## Scenarios and trust boundaries
+
+The generator includes denial probing, export concentration, frequency shifts, and held-out reordered tool sequences. Reader, operator and batch populations can legitimately export, request administrative tools, incur denials and operate quickly. These overlaps create benign alert candidates and prevent an attack-only tool shortcut. New tenant/actor/tool relationships are exposed as novelty evidence; they are not verified attack coverage. Policy-change and privileged-boundary hypotheses require source context beyond an anomaly score.
+
+[Methodology, data specification, source compatibility and privacy boundaries](docs/METHODOLOGY.md) document chronological splits, contaminated training, label isolation, frozen actor history, imbalance, uncertainty and limitations. Required audit fields are `schema_version=1`, `tenant`, `actor`, `session`, `event_id`, timezone-aware `at`, `tool`, and `outcome`. Arbitrary payloads are discarded. The Sentinel adapter requires explicit caller session correlation and trusts supplied audit authenticity. Never publish real audit identifiers or tool arguments.
+
+## Historical evidence
+
+The [original held-out evaluation](docs/HISTORICAL_BASELINE.md) remains unchanged: sensitive-action rate AP **0.1849** exceeds Isolation Forest AP **0.1062**. Original artifacts remain under `evaluation/`. Reproduce with `.venv/bin/python evaluate.py --output artifacts/historical.json`.
+
+The [legacy notebook](legacy/research/agent_anomaly_detection.ipynb) used in-sample evaluation and known contamination. Its approximately 0.99 and 0.75 ROC-AUC observations are historical research, not held-out detector performance. The new generator and features are different; their scores are not a longitudinal performance improvement claim.
+
+## Verify
+
+```sh
+.venv/bin/python -m pip install -r requirements-dev.lock
+.venv/bin/python -m coverage run -m unittest -v
+.venv/bin/python -m coverage report
+.venv/bin/python -m ruff check agent_anomaly test_audit.py
+.venv/bin/python -m ruff format --check agent_anomaly test_audit.py
+.venv/bin/python -m bandit -r agent_anomaly -q
+.venv/bin/python -m pip_audit -r requirements.txt --no-deps --disable-pip
+.venv/bin/python -m agent_anomaly --output artifacts/replay
+```
+
+Tests exercise invalid types/timestamps/schema, payload exclusion, tenant isolation, duplicate and out-of-order events, volume/session limits, missing model state, nonfinite features, contaminated training, frozen history, label independence and budget edges. Coverage enforces 75% across library modules; the CLI is verified by full deterministic replay. CI also validates generated metric/count invariants and compares two runs. Dependency scanning needs network access. See [verification workflow](.github/workflows/evaluation.yml).
+
+## Operational limitations
+
+No real-world efficacy, calibrated attack probability, online incident latency or enterprise readiness is claimed. Completed-session scoring delays detection until session closure. Fixed frozen profiles can age badly; concept drift requires review and recalibration. The transition feature is coarse, and the unseen-family result is poor. Synthetic labels and fixed generator assumptions limit all reported metrics. Session bootstrap intervals understate uncertainty from repeated actors and generator design. Batch processing is bounded, but there is no streaming service, model registry or production deployment.
+
+The portfolio value is the measured comparison, reproducibility and explicit failure analysis. [MIT license](LICENSE). [Security reporting](SECURITY.md).
