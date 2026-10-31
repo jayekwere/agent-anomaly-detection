@@ -193,3 +193,14 @@ class SequenceArtifactTests(unittest.TestCase):
         self.assertTrue(all(batch["day"] > 8 for batch in plan["test_batches"]))
         self.assertFalse({42, 43, 48, 50, 52} & {b["seed"] for b in plan["test_batches"]})
         self.assertEqual(plan["sequence_model"]["additive_smoothing"], 1.0)
+
+
+class NumericalDiagnosticTests(unittest.TestCase):
+    def test_near_equal_shuffle_scores_are_ties(self):
+        from agent_anomaly.sequence_experiment import order_score_diagnostic
+
+        original = np.array([1.0, 2.0, 3.0])
+        shuffled = np.array([1.0 - 2e-16, 2.0 + 1e-15, 2.0])
+        result = order_score_diagnostic(original, shuffled)
+        self.assertEqual(result["fraction_original_score_higher"], 1 / 3)
+        self.assertEqual(result["median_original_minus_shuffled_score"], 0.0)

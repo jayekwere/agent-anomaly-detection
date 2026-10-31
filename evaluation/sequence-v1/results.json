@@ -111,7 +111,7 @@
     "features.py": "a8b66240e08bbce4df8da3a470d18eed51369793f052de9e933907fe8dfc78d9",
     "ingestion.py": "2ca537eeb7da1cc3c240a735564e8bdd118b24f6cefc0e810ef733abe4a76cb4",
     "sequence.py": "ec8ff65c6bbe6025283030ea223115f0eade89ce3551e8ea6300ca6edf32fa9b",
-    "sequence_experiment.py": "486a6ff5860ef63d5a9ada531636c2da7737082fbdd82e5d0d538e5e4540c39a"
+    "sequence_experiment.py": "7c49757bcfbe33b07d4052e4e2c662efc8ba04c9b27abcc4303cff2011e12546"
   },
   "tests": {
     "fresh_sequence": {
@@ -928,7 +928,7 @@
         "original_benign": {
           "sessions": 1146,
           "median_original_minus_shuffled_score": 0.0,
-          "fraction_original_score_higher": 0.49476439790575916
+          "fraction_original_score_higher": 0.4930191972076789
         }
       }
     },

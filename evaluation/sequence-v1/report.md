@@ -36,7 +36,7 @@ First-order, actor-scoped transition counts are fitted on unfiltered training ev
 Count-preserving order control (one permutation per session; no relabelled efficacy claim):
 
 - original_sequence: median original minus shuffled Markov score +1.134; original score higher in 100.0% of sessions.
-- original_benign: median original minus shuffled Markov score +0.000; original score higher in 49.5% of sessions.
+- original_benign: median original minus shuffled Markov score +0.000; original score higher in 49.3% of sessions.
 
 ### fresh_mixed: 58 positives in 1200 sessions
 
@@ -70,6 +70,7 @@ Count-preserving order control (one permutation per session; no relabelled effic
 - Training labels remain unused despite contamination; no production efficacy claim.
 - Paired intervals resample tenant/actor clusters with fixed decisions; they do not include training or validation uncertainty, or rerun the batch cap in each resample.
 - Per-session bootstrap intervals inherited from the original metrics assume independence; prefer the paired actor-cluster differences for this comparison.
+- Shuffle score differences within rtol=1e-12 / atol=1e-12 count as numerical ties, consistent with artifact comparison precision.
 - A shuffled session can still have unusual composition. One permutation is a diagnostic, not a permutation significance test.
 - Unknown actors and sessions with fewer than two events reject explicitly. Unknown tools use a reserved smoothed bucket without updating fitted state.
 - Full scenario/population results, thresholds, seeds, event hashes and source hashes are in results.json.

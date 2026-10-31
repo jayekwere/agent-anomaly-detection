@@ -51,22 +51,24 @@ def validate(path: Path) -> dict:
     return result
 
 
-def compare(expected: object, actual: object) -> None:
+def compare(expected: object, actual: object, path: str = "root") -> None:
     if isinstance(expected, dict):
         if not isinstance(actual, dict) or expected.keys() != actual.keys():
             raise ValueError("artifact keys differ")
         for key in expected:
-            compare(expected[key], actual[key])
+            compare(expected[key], actual[key], path + "/" + key)
     elif isinstance(expected, list):
         if not isinstance(actual, list) or len(expected) != len(actual):
             raise ValueError("artifact lengths differ")
-        for a, b in zip(expected, actual):
-            compare(a, b)
+        for i, (a, b) in enumerate(zip(expected, actual)):
+            compare(a, b, path + "/" + str(i))
     elif isinstance(expected, float):
         if not isinstance(actual, (int, float)) or not math.isclose(
             expected, actual, abs_tol=1e-12, rel_tol=1e-12
         ):
-            raise ValueError("artifact numbers differ")
+            raise ValueError(
+                f"artifact numbers differ at {path}: expected {expected}, actual {actual}"
+            )
     elif expected != actual:
         raise ValueError("artifact values differ")
 

@@ -115,6 +115,18 @@ def order_control(events: list[dict], seed: int) -> list[dict]:
     return output
 
 
+def order_score_diagnostic(original: np.ndarray, shuffled: np.ndarray) -> dict:
+    # Identical transition statistics can sum in different floating-point orders.
+    # Treat differences within the artifact comparison tolerance as ties.
+    delta = original - shuffled
+    delta = np.where(np.isclose(original, shuffled, rtol=1e-12, atol=1e-12), 0.0, delta)
+    return {
+        "sessions": len(delta),
+        "median_original_minus_shuffled_score": float(np.median(delta)),
+        "fraction_original_score_higher": float((delta > 0).mean()),
+    }
+
+
 def run(output: Path, plan_path: Path = DEFAULT_PLAN) -> dict:
     plan = json.loads(plan_path.read_text())
     train, _ = generate(**plan["training"])
@@ -187,12 +199,9 @@ def run(output: Path, plan_path: Path = DEFAULT_PLAN) -> dict:
                 ("original_sequence", labels == 1),
                 ("original_benign", labels == 0),
             ]:
-                delta = scores["markov_deviance"][mask] - shuffled["markov_deviance"][mask]
-                diagnostic[category] = {
-                    "sessions": int(mask.sum()),
-                    "median_original_minus_shuffled_score": float(np.median(delta)),
-                    "fraction_original_score_higher": float((delta > 0).mean()),
-                }
+                diagnostic[category] = order_score_diagnostic(
+                    scores["markov_deviance"][mask], shuffled["markov_deviance"][mask]
+                )
             entry["order_control_unlabelled_score_diagnostic"] = diagnostic
         if (
             model.thresholds != frozen_thresholds
@@ -271,6 +280,7 @@ def report(result: dict) -> str:
         *["- " + limit for limit in result["plan"]["limitations"]],
         "- Paired intervals resample tenant/actor clusters with fixed decisions; they do not include training or validation uncertainty, or rerun the batch cap in each resample.",
         "- Per-session bootstrap intervals inherited from the original metrics assume independence; prefer the paired actor-cluster differences for this comparison.",
+        "- Shuffle score differences within rtol=1e-12 / atol=1e-12 count as numerical ties, consistent with artifact comparison precision.",
         "- A shuffled session can still have unusual composition. One permutation is a diagnostic, not a permutation significance test.",
         "- Unknown actors and sessions with fewer than two events reject explicitly. Unknown tools use a reserved smoothed bucket without updating fitted state.",
         "- Full scenario/population results, thresholds, seeds, event hashes and source hashes are in results.json.",
