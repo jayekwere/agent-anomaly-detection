@@ -170,3 +170,39 @@ class PopulationLeakageTests(unittest.TestCase):
         self.assertTrue(all(p["day"] > 20 for p in parts))
         self.assertFalse({8112601, 8112602, 8112603, 8112604, 42, 43} & {p["seed"] for p in parts})
         self.assertEqual(self.plan["review_budget"], 0.02)
+
+
+class PopulationArtifactTests(unittest.TestCase):
+    def test_corrupt_scope_queue_and_reader_accounting_reject(self):
+        from pathlib import Path
+        import tempfile
+        from scripts.verify_population_results import validate
+
+        data = validate(Path(__file__).parent / "evaluation/population-v1/results.json")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            for corruption in ["tenant", "support", "group_count", "reader", "fallback"]:
+                bad = copy.deepcopy(data)
+                if corruption == "tenant":
+                    bad["parameters"]["population"]["references"][0]["source"][0] = "other"
+                elif corruption == "support":
+                    bad["parameters"]["population"]["references"][0]["reference_sessions"] = 1
+                elif corruption == "group_count":
+                    next(
+                        iter(
+                            bad["tests"]["fresh_population_joint"]["population_queue"][
+                                "groups"
+                            ].values()
+                        )
+                    )["alerts"] += 1
+                elif corruption == "fallback":
+                    bad["tests"]["fresh_population_joint"]["population_queue"][
+                        "fallback_sessions"
+                    ] += 1
+                else:
+                    bad["tests"]["fresh_population_joint"]["models"][
+                        "population_rules_plus_sequence"
+                    ]["reader_sequence"]["missed"] += 1
+                path.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError):
+                    validate(path)

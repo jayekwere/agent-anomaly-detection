@@ -1,0 +1,76 @@
+{
+  "synthetic": true,
+  "historical_experiment": "combined-v1/fresh_joint",
+  "purpose": "Post-hoc diagnosis on previously inspected evidence; annotations only aggregate outputs, never fit/calibrate the detector.",
+  "training_events_sha256": "d1b331d14f5058da2f5d89ff41321add1d9387b06d8eea24b2d2ebc330185601",
+  "validation_events_sha256": "8347b51185e28812f33a4ce0516c400cc87676faa19b9c49488fabf2cd42add9",
+  "historical_events_sha256": "b628429a22ab9b1f429755100ace990f4c68991e3f8641970f837a40d94ac109",
+  "global_fusion": {
+    "component_scales": {
+      "rules": 1.5625,
+      "markov_deviance": 1.9964986029162488
+    },
+    "threshold": 1.1789473684210525,
+    "quantile": 0.98,
+    "combination": "maximum"
+  },
+  "populations": {
+    "reader": {
+      "validation_sessions": 414,
+      "validation_sequence_score_median": 0.4438745645201302,
+      "validation_sequence_score_q98": 1.697964312144171,
+      "training_median_probability_read_after_read": 0.6413517727155468,
+      "historical_sequence_anomalies": 9,
+      "historical_sequence_score_min_median_max": [
+        0.985718711786512,
+        1.2318828266590764,
+        1.7666571145346814
+      ],
+      "historical_combined_detections": 0
+    },
+    "operator": {
+      "validation_sessions": 410,
+      "validation_sequence_score_median": 0.8772937285132709,
+      "validation_sequence_score_q98": 1.9964986029162488,
+      "training_median_probability_read_after_read": 0.2811811811811812,
+      "historical_sequence_anomalies": 13,
+      "historical_sequence_score_min_median_max": [
+        1.6725218479615425,
+        2.1836599036085103,
+        2.5332687724436567
+      ],
+      "historical_combined_detections": 3
+    },
+    "batch": {
+      "validation_sessions": 376,
+      "validation_sequence_score_median": 0.8147740420179481,
+      "validation_sequence_score_q98": 2.072324899667672,
+      "training_median_probability_read_after_read": 0.24709302325581395,
+      "historical_sequence_anomalies": 8,
+      "historical_sequence_score_min_median_max": [
+        1.9676352001049415,
+        2.193007540507815,
+        2.5820946754057523
+      ],
+      "historical_combined_detections": 2
+    }
+  },
+  "validation_reader_tenant_tails": {
+    "synthetic-0": {
+      "sessions": 207,
+      "sequence_q98": 1.4856001952912838,
+      "at_or_above_q98_scenarios": {
+        "benign": 4,
+        "export_burst": 1
+      }
+    },
+    "synthetic-1": {
+      "sessions": 207,
+      "sequence_q98": 2.1200445169413094,
+      "at_or_above_q98_scenarios": {
+        "export_burst": 4,
+        "benign": 1
+      }
+    }
+  }
+}

@@ -21,8 +21,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -r requirements-dev.lock
-      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
-      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py scripts
+      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
+      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
       - run: python -m coverage run -m unittest -v
       - run: python -m bandit -r agent_anomaly scripts -q
       - run: python -m pip_audit -r requirements.txt --no-deps --disable-pip
@@ -36,9 +36,15 @@ jobs:
       - run: python scripts/verify_sequence_results.py artifacts/sequence-first/results.json --reference evaluation/sequence-v1/results.json
       - run: python -m coverage run --append -m agent_anomaly.combined_experiment --output artifacts/combined-first
       - run: python -m agent_anomaly.combined_experiment --output artifacts/combined-second
-      - run: python -m coverage report
       - run: diff -r artifacts/combined-first artifacts/combined-second
       - run: python scripts/verify_combined_results.py artifacts/combined-first/results.json --reference evaluation/combined-v1/results.json
+      - run: python -m coverage run --append -m agent_anomaly.population_experiment --output artifacts/population-first
+      - run: python -m agent_anomaly.population_experiment --output artifacts/population-second
+      - run: diff -r artifacts/population-first artifacts/population-second
+      - run: python scripts/verify_population_results.py artifacts/population-first/results.json --reference evaluation/population-v1/results.json
+      - run: python -m scripts.investigate_reader_misses --output artifacts/reader-investigation.json
+      - run: python -c "import json; from scripts.verify_sequence_results import compare; compare(json.load(open('evaluation/population-v1/investigation.json')), json.load(open('artifacts/reader-investigation.json')))"
+      - run: python -m coverage report
       - run: python evaluate.py --output artifacts/historical.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
