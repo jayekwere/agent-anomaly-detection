@@ -143,3 +143,7 @@ Tests exercise invalid types/timestamps/schema, payload exclusion, tenant isolat
 No real-world efficacy, calibrated attack probability, online incident latency or enterprise readiness is claimed. Completed-session scoring delays detection until session closure. Fixed frozen profiles can age badly; concept drift requires review and recalibration. The transition feature is coarse, and the unseen-family result is poor. Synthetic labels and fixed generator assumptions limit all reported metrics. Session bootstrap intervals understate uncertainty from repeated actors and generator design. Batch processing is bounded, but there is no streaming service, model registry or production deployment.
 
 The portfolio value is the measured comparison, reproducibility and explicit failure analysis. [MIT license](LICENSE). [Security reporting](SECURITY.md).
+
+---
+
+**AI assistance:** AI tools helped with code or documentation.
