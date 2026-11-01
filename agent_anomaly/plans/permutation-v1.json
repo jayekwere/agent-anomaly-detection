@@ -1,0 +1,50 @@
+{
+  "experiment": "permutation-v1",
+  "schema_version": 6,
+  "design_status": "Committed locally before generating fresh test data; targeted follow-up on already inspected sequence/reader failures.",
+  "training": {"seed": 42, "day": 0, "count": 1200},
+  "validation": {"seed": 43, "day": 2, "count": 1200},
+  "sequence_model": {"additive_smoothing": 1.0},
+  "calibration": {"quantile": 0.98, "method": "higher", "strict_greater_than": true},
+  "review_budget": 0.02,
+  "population_calibration": {"read_dominant_min_fraction": 0.5, "export_heavy_min_fraction": 0.25, "minimum_validation_sessions": 50},
+  "permutation": {
+    "replicates": 499,
+    "seed": 20261101,
+    "statistic": "Two-sided adjacent-repeat deviation conditional on the tool multiset: abs(n * observed_equal_adjacent_pairs - sum_tool count*(count-1)). Integer arithmetic avoids numerical tie ambiguity.",
+    "null": "Independently uniformly permute the canonical tool multiset within each session. Preserve tool counts, session length, timestamps/outcomes/identities; shuffle only tool assignments for the null statistic.",
+    "rng": "Per-multiset SHA-256 seed of master seed plus sorted tool/count pairs; excludes observed order, labels, population, tenant/actor/session IDs and processing order.",
+    "score": "replicates minus count(null_statistic >= observed_statistic); larger is more anomalous. Diagnostic Monte Carlo p=(1+exceedances)/(replicates+1), not a malicious-activity probability.",
+    "threshold": "Unlabelled validation q98 of integer scores, strict greater-than. No training fit and no population-specific calibration for this new baseline.",
+    "max_session_events": 256,
+    "max_permutation_cells_per_batch": 25000000,
+    "minimum_session_events": 2
+  },
+  "tie_policy": {"seed": 9005, "method": "For every detector in this new comparison, pre-order sessions by SHA-256 of seed plus tenant/actor/session key, then use stable descending-score top-k. Report boundary ties. Identity affects only fixed tie priority, never score or null RNG."},
+  "test_batches": [
+    {"name": "fresh_permutation_joint", "parts": [
+      {"seed": 10112601, "day": 28, "count": 600, "unseen": false},
+      {"seed": 10112602, "day": 28, "count": 600, "unseen": true}
+    ]},
+    {"name": "fresh_permutation_sequence", "parts": [
+      {"seed": 10112603, "day": 30, "count": 1200, "unseen": true}
+    ]},
+    {"name": "fresh_permutation_nonsequence", "parts": [
+      {"seed": 10112604, "day": 32, "count": 1200, "unseen": false}
+    ]}
+  ],
+  "mixture": "Retain every session in each independent generator stream with the unchanged generator/make_batch helper. No label-based sampling.",
+  "primary": "Permutation baseline reader-sequence recovery, precision/recall and false alerts versus existing detectors on fresh_permutation_joint under one global cap of 24 unique sessions.",
+  "secondary": ["sequence-only and non-sequence controls", "exact global top-24 counterfactual", "reader misses below threshold versus cap/tie suppression", "per-population/scenario workload", "sampled-null degeneracy and finite Monte Carlo resolution", "gains/losses and paired actor-cluster recall differences"],
+  "paired_uncertainty": {"unit": "tenant_actor_cluster", "replicates": 500, "seed": 9006, "refit_thresholds": false, "rerank_alerts": false},
+  "promotion_policy": "Report all predeclared cohorts and comparators, keep historical evidence and reference unchanged, and do not retune statistic/replicates/threshold/seed after seeing fresh results.",
+  "limitations": [
+    "Conditional exchangeability of tool order is plausible for this IID benign synthetic generator, but legitimate real workflows have structured order and may alert.",
+    "The repeated-run statistic is targeted to previously inspected ordering failures; fresh instances are not blind family validation.",
+    "Conditioning on counts deliberately removes volume, denial, frequency and composition signals; constant-tool or weakly informative sessions may remain undetectable.",
+    "499 null draws give p resolution 1/500 and a saturated integer score; ties and the shared budget can exclude real anomalies.",
+    "Diagnostic Monte Carlo p values are conditional randomization evidence, not attack probabilities or real-world false-positive guarantees.",
+    "All detectors share the same label-free tie policy in this study; tie priorities differ from earlier studies, which remain untouched.",
+    "Paired bootstrap intervals condition on fitted models, fixed null draws and fixed alert decisions; they omit calibration, Monte Carlo and reranking uncertainty."
+  ]
+}
