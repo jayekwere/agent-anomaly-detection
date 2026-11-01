@@ -21,8 +21,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -r requirements-dev.lock
-      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
-      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
+      - run: python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py test_permutation.py scripts
+      - run: python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py test_permutation.py scripts
       - run: python -m coverage run -m unittest -v
       - run: python -m bandit -r agent_anomaly scripts -q
       - run: python -m pip_audit -r requirements.txt --no-deps --disable-pip
@@ -44,6 +44,10 @@ jobs:
       - run: python scripts/verify_population_results.py artifacts/population-first/results.json --reference evaluation/population-v1/results.json
       - run: python -m scripts.investigate_reader_misses --output artifacts/reader-investigation.json
       - run: python -c "import json; from scripts.verify_sequence_results import compare; compare(json.load(open('evaluation/population-v1/investigation.json')), json.load(open('artifacts/reader-investigation.json')))"
+      - run: python -m coverage run --append -m agent_anomaly.permutation_experiment --output artifacts/permutation-first
+      - run: python -m agent_anomaly.permutation_experiment --output artifacts/permutation-second
+      - run: diff -r artifacts/permutation-first artifacts/permutation-second
+      - run: python scripts/verify_permutation_results.py artifacts/permutation-first/results.json --reference evaluation/permutation-v1/results.json
       - run: python -m coverage report
       - run: python evaluate.py --output artifacts/historical.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

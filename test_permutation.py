@@ -158,3 +158,28 @@ class PermutationLeakageTests(unittest.TestCase):
         self.assertFalse({42, 43, 9212601, 9212602, 9212603, 9212604} & {p["seed"] for p in parts})
         self.assertEqual(plan["permutation"]["replicates"], 499)
         self.assertEqual(plan["review_budget"], 0.02)
+
+
+class PermutationArtifactTests(unittest.TestCase):
+    def test_corrupt_p_values_cap_and_reader_recovery_are_rejected(self):
+        from pathlib import Path
+        import tempfile
+        from scripts.verify_permutation_results import validate
+
+        data = validate(Path(__file__).parent / "evaluation/permutation-v1/results.json")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.json"
+            for corruption in ["p_value", "reader", "cap", "ties"]:
+                bad = copy.deepcopy(data)
+                batch = bad["tests"]["fresh_permutation_joint"]
+                if corruption == "p_value":
+                    batch["reader_sequence_evidence"][0]["monte_carlo_p"] = 0.0
+                elif corruption == "reader":
+                    batch["models"]["conditional_permutation"]["reader_sequence"]["missed"] += 1
+                elif corruption == "cap":
+                    batch["shared_queue"]["cap_sessions"] = 48
+                else:
+                    batch["shared_queue"]["boundary_ties_selected"] = 1000
+                path.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError):
+                    validate(path)

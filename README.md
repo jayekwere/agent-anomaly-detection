@@ -92,6 +92,21 @@ The investigation documents weaker reader transition scores, substantial overlap
 
 [Investigation and leakage controls](docs/POPULATION_CALIBRATION.md), [calculated report](evaluation/population-v1/report.md), [full results](evaluation/population-v1/results.json), and [historical diagnostic evidence](evaluation/population-v1/investigation.json) include support/fallback policies, tenant isolation, reader examples, group allocation, matched-workload controls and displacement tradeoffs.
 
+## Count-preserving permutation follow-up
+
+A fixed count-conditioned adjacent-repeat statistic compares each session with **499 within-session tool permutations**, then uses unlabelled validation calibration and **one shared 24-session cap**. Tool counts remain exact; no role or scenario label enters the statistic or null draws.
+
+On a new mixed set of 1,200 sessions and 64 anomalies, permutation finds **23 true / 1 false alert**, AP **0.494**, and **8/12 reader-sequence anomalies**, versus zero reader recoveries for the existing detectors. At exactly 24 reviews, global fusion finds 16 true / 8 false. Four reader anomalies remain excluded by the shared cap and tied maximum scores.
+
+The specialization cost is substantial: on non-sequence control, permutation finds only **4 true / 20 false alerts**, versus rules **14 / 4**. Sequence-only reader recovery is **5/18**, limited by the 24-slot queue among 93 candidates. No general reference is promoted. The conditional null fits the generator's IID benign ordering; legitimate real workflow sequences may alert.
+
+```sh
+.venv/bin/python -m agent_anomaly.permutation_experiment --output artifacts/permutation
+.venv/bin/python scripts/verify_permutation_results.py artifacts/permutation/results.json --reference evaluation/permutation-v1/results.json
+```
+
+[Permutation methodology and leakage checks](docs/PERMUTATION_BASELINE.md), [calculated report](evaluation/permutation-v1/report.md), and [full evidence](evaluation/permutation-v1/results.json) document the predeclared design, common tie policy, reader recovery/misses, finite-draw p-value limits, matched-workload controls and false-alert tradeoffs. These are fresh instances of an already inspected synthetic family.
+
 ## Scenarios and trust boundaries
 
 The generator includes denial probing, export concentration, frequency shifts, and held-out reordered tool sequences. Reader, operator and batch populations can legitimately export, request administrative tools, incur denials and operate quickly. These overlaps create benign alert candidates and prevent an attack-only tool shortcut. New tenant/actor/tool relationships are exposed as novelty evidence; they are not verified attack coverage. Policy-change and privileged-boundary hypotheses require source context beyond an anomaly score.
@@ -112,9 +127,10 @@ The [legacy notebook](legacy/research/agent_anomaly_detection.ipynb) used in-sam
 .venv/bin/python -m coverage run --append -m agent_anomaly.sequence_experiment --output artifacts/sequence
 .venv/bin/python -m coverage run --append -m agent_anomaly.combined_experiment --output artifacts/combined
 .venv/bin/python -m coverage run --append -m agent_anomaly.population_experiment --output artifacts/population
+.venv/bin/python -m coverage run --append -m agent_anomaly.permutation_experiment --output artifacts/permutation
 .venv/bin/python -m coverage report
-.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
-.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py scripts
+.venv/bin/python -m ruff check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py test_permutation.py scripts
+.venv/bin/python -m ruff format --check agent_anomaly test_audit.py test_sequence.py test_combined.py test_population.py test_permutation.py scripts
 .venv/bin/python -m bandit -r agent_anomaly scripts -q
 .venv/bin/python -m pip_audit -r requirements.txt --no-deps --disable-pip
 .venv/bin/python -m agent_anomaly --output artifacts/replay
